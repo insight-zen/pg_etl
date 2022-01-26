@@ -1,10 +1,7 @@
 # Creating a GEM
 
-## Start with a bare repository on github or GIT host and clone it locally
-https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository
-`git clone git@github.com:insight-zen/pg_etl.git`
-
-Be sure to include `README.md`, `.gitignore` and `MIT License` in the repository.
+## Start with a bare repository on github
+* Keep it completely bare. Do not add any files to it.
 
 ## Build a new gem locally
 Additional information at https://bundler.io/v2.2/guides/creating_gem.html
@@ -13,41 +10,46 @@ Additional information at https://bundler.io/v2.2/guides/creating_gem.html
 
 `bundle gem pg_etl`
 
-This creates a `pg_etl` directory locally, which we will use to map the github repo.
+`git branch -M main`
+
+This creates a `pg_etl` directory locally, which we will use to map the github repo. Work in the `main` branch and complete the local edits.
 
 ## Local Repo edit
+* Edit README and remove the TODOs
+* Copy .gitignore from pg_etl. This will exclude Gemfile.lock from the repo.
+* Edit .gemspec, cleanup TODOs, add dependencies (gem and development)
+  Testing gems such as simple_cov, byebug etc.
+* Add/edit Guardfile Use pg_etl as reference
+  Adjust the test file regex. We use test with code_test.rb - test as the suffix.
+  'git add Guardfile`
+* modify test_helper. Use pg_etl as reference.
+  Add the AssertiveTest module to enable writing the tests in dsl format
+* Copy .rubycop.yml to the gem root
+  Even though a local copy of rubocop exists, this will ensure self contained linting.
+* Check Rakefile
 
-### Edit README.md
-Add a brief description here.
-
-### Pre commit checks
+## Pre commit checks
 #### Run bundle
-The following checks ensure that all the prerequisites have been met.
-`bundle`
-* Check for any remaining TODOs or FIXes in the .gemspec
-* Add the testing gems commonly used -- minitest_reporters, byebug, simple_cov etc. Refer to the .gemspec in this gem.
+`bundle install`
 
-#### Run rake and rake test
+### Run rake and rake test
 `rake test`
-* Add the needed prelude to test_helper. Refer to `test_helper` in this gem. It also adds rails style dsl for writing tests in a declarative syntax.
-* Edit `Rakefile` to set the test file name convention regex. See the `Rakefile` in this gem.
 
+### Run rake rubocop and auto_correct
 `rake rubocop`
-* Ensure the rubocop.yml the present in this gem maps to the standard in use.
-
-
-
 
 `rake rubocop:auto_correct`
-* Run this if needed. At this point the only ruby code is in test_helper.
 
-#### Check git status
+### Check git status
 `git status`
 * Ensure Gemfile.lock is **not** added to the git repo. Check the `.gitignore` in this gem as reference.
 
-### Make a first commit
+## Make a first commit
 `git commit -a -m "First Commit that passes bundle, rake test"
 
-### Push to github
+## Push to github
+`git branch -M main`
+
 `git remote add origin git@github.com:insight-zen/pg_etl.git`
-git push -u origin main
+
+`git push -u origin main`
