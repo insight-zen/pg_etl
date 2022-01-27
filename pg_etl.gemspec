@@ -38,6 +38,9 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "pg", "~> 1.1"
 
+  # This gem depends on hash_zen. For local development this is listed in Gemfile with a local override
+  # This is because add_dependency does not accept git: as an argument
+
   spec.add_development_dependency "byebug"
   spec.add_development_dependency "simplecov"
   spec.add_development_dependency "guard"

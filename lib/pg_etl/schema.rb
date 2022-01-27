@@ -1,9 +1,38 @@
+# frozen_string_literal: true
+
 module PgEtl
   module Schema
     def self.included(base)
       base.class_eval do
       end
       base.extend(ClassMethods)
+    end
+
+    #
+    # - Catalog Queries
+    #
+
+    def table_sql(**opts)
+      [
+        "select table_name ",
+        "from information_schema.tables",
+        "where table_schema = 'public'",
+        "order by table_name"
+      ].compact.join(" ")
+    end
+
+    def column_sql(**opts)
+      where_str = [
+        "table_schema = 'public'",
+        in_clause(field: :table_name, spec: opts[:table] || opts[:tables]),
+      ].compact.join(" AND ")
+
+      [
+        "select table_name, column_name, data_type, is_nullable, column_default, character_maximum_length, datetime_precision, numeric_precision",
+        "from information_schema.columns",
+        "where #{where_str}",
+        "order by table_name, column_name"
+      ].compact.join(" ")
     end
 
     #
@@ -47,18 +76,9 @@ module PgEtl
     end
 
     # Creates {table: col_hash} for selected tables ~ schema.rb map
-    def columns(**opts)
-      where_str = [
-        "table_schema = 'public'",
-        in_clause(field: :table_name, spec: opts[:tables]),
-      ].compact.join(" AND ")
-      sql = [
-        "select table_name, column_name, data_type, is_nullable, column_default, character_maximum_length, datetime_precision, numeric_precision",
-        "from information_schema.columns",
-        "where #{where_str}",
-        "order by table_name, column_name"
-      ].compact.join(" ")
-      rv = execute(sql: sql)
+    def q_columns(**opts)
+      rv = execute(sql: column_sql(**opts))
+      return rv if opts[:format] == :raw
       col_hash = {}
       rv.each { |row|
         row.transform_keys! { |k| k.to_sym }
@@ -76,18 +96,14 @@ module PgEtl
     #   c.tables(names_only: true)
     # Default is a hash with {:name, :num_columns, :rows }
     #
-    def tables(**opts)
-      sql = [
-        "select table_name ",
-        "from information_schema.tables",
-        "where table_schema = 'public'",
-        "order by table_name"
-      ].compact.join(" ")
-      table_arr = execute(sql: sql).map { |row| row[:table_name] }
+    def q_tables(**opts)
+      rv = execute(sql: table_sql(**opts))
+      return rv if opts[:format] == :raw
+      table_arr = rv.map { |row| row[:table_name] }
       return table_arr if opts[:names_only]
 
       # Add column counts and num rows to each table
-      col_hash = columns
+      col_hash = q_columns
       tabs_list = table_arr.map { |t|
         {
           name: t,

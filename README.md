@@ -9,8 +9,11 @@ TODO: Delete this and the text above, and describe your gem
 Add this line to your application's Gemfile:
 
 ```ruby
+gem "hash_zen", git: "git@github.com:insight-zen/hash_zen.git", branch: "main"
 gem 'pg_etl'
 ```
+
+You will add dependency on `hash_zen` which is required by this gem.
 
 And then execute:
 

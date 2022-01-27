@@ -11,14 +11,14 @@ module PgEtl
     end
 
     [:plain, :custom].each do |format|
-      test "output file extenson for format #{format}" do
+      test "output file extension for format #{format}" do
         base = Connection.new(db_name: "postgres")
         assert_equal base.format_ext_map[format], File.extname(base.output_file_name(format: format))
         base.close
       end
     end
 
-    test "dump a databse in plain format" do
+    test "dump a database in plain format" do
       base = Connection.new(db_name: "site2020")
       ts = "xx_yy_zz"
       out_file = base.output_file_name(format: :plain, time_stamp: ts)
@@ -37,14 +37,14 @@ module PgEtl
       assert_equal true, Admin.create_database(db_name: db_name, quiet: true)
 
       base = Connection.new(db_name: db_name)
-      assert_equal({}, base.tables(format: :hash))
+      assert_equal({}, base.q_tables(format: :hash))
 
       file = File.expand_path(File.join(__FILE__, "../../files/plain_3tab.txt"))
       assert_equal true, File.exist?(file), "Checking if file: #{file} exists."
       rv = base.load(file: file, quiet: true)
       assert_equal true, rv
       result = { accounts: { num_columns: 8, rows: 1 }, comments: { num_columns: 9, rows: 0 }, pages: { num_columns: 19, rows: 9 } }
-      assert_equal result, base.tables(format: :hash)
+      assert_equal result, base.q_tables(format: :hash)
     end
   end
 end

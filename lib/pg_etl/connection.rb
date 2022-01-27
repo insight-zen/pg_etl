@@ -1,26 +1,52 @@
 # frozen_string_literal: true
+
 require_relative "compare.rb"
 require_relative "schema.rb"
+require_relative "table.rb"
+require_relative "column.rb"
 
 module PgEtl
   class Connection
     include Compare
     include Schema
 
-    # Manage a connection to a database. Once instantiated the connection stays open. Be sure to close it
+    # Manage a connection to a database.
+    # Once instantiated the connection stays open. Be sure to close it
     # before gracefully existing the program.
-    attr_accessor :connection, :name
+    attr_accessor :connection, :name, :tables
+
     # Use db_name to refer to the database name. pg gem uses dbname.
     # This is the only place where the translation to non-underscore version is done
     def initialize(db_name:, **opts)
-      @name, @opts = db_name, opts
+      @name, @opts, @tables = db_name, opts, []
       # host, port, options, tty, dbname, user, password
       @connection = PG.connect(dbname: @name, user: @opts[:user], password: @opts[:password])
+      build_schema unless opts[:no_schema]
+      "#{num_tables} in database #{name}"
     end
 
+    # Run catalog query and build in memory Table structures with column information
+    def build_schema(**opts)
+      tables = q_tables(names_only: true)
+      @tables = tables.map { |table|
+        # col_array = q_columns(table: table, format: :raw)
+        Table.new(name: table, db: self)
+      }
+    end
+
+    def num_tables
+      @tables.length
+    end
+
+    def table(code)
+      @tables.detect{ |c| c.name == code.to_s }
+    end
+
+    # Returned result is a symbolized hash.
+    # If you want to fetch the result as PG::Result, specify (format: :raw)
     def execute(sql:, **opts)
       rv = connection.exec(sql)
-      return rv if opts[:raw]
+      return rv if opts[:format] == :raw
       rv.map { |r| r.transform_keys { |k| k.to_sym } }
     end
 
@@ -101,10 +127,13 @@ module PgEtl
     end
 
     class << self
+      def open(db_name:, **opts)
+        new(db_name: db_name)
+      end
+
       def admin_run(sql:, **opts)
         Connection.run(db_name: "postgres", sql: sql, **opts)
       end
-
 
       # Open connection, run sql, and close connection
       def run(db_name:, sql:, **opts)

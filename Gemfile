@@ -5,8 +5,7 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in pg_etl.gemspec
 gemspec
 
-gem "rake", "~> 13.0"
+# Override local dependency for hash_zen. This is stored in  ~/.bundle/config
+#  $ bundle config local.insight_core "~/dev/gems/hash_zen"
 
-gem "minitest", "~> 5.0"
-
-gem "rubocop", "~> 1.21"
+gem "hash_zen", git: "git@github.com:insight-zen/hash_zen.git", branch: "work"
