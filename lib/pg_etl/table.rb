@@ -24,12 +24,21 @@ module PgEtl
     end
 
     def column(name)
+      raise("Column #{name} does not exist. Available columns are: #{column_names.join(', ')}") unless column_names.include?(name.to_s)
       @columns.detect { |c| c.name == name.to_s }
+    end
+
+    def column_names
+      @columns.map(&:name).sort
+    end
+
+    def spec_hash
+      columns.reduce({}) { |acc, c| acc.merge(c.spec_hash) }
     end
 
     # List the differences with the second table
     def diff(t2:, **opts)
+      HashZen::Diff.new(base: spec_hash, target: t2.spec_hash)
     end
-
   end
 end

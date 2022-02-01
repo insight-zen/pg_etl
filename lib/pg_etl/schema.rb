@@ -123,6 +123,5 @@ module PgEtl
 
     module ClassMethods
     end
-
   end
 end

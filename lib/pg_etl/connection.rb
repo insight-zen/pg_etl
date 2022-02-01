@@ -39,7 +39,7 @@ module PgEtl
     end
 
     def table(code)
-      @tables.detect{ |c| c.name == code.to_s }
+      @tables.detect { |c| c.name == code.to_s }
     end
 
     # Returned result is a symbolized hash.
