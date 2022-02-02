@@ -1,6 +1,6 @@
 #! /usr/bin/env ruby
 
-require_relative "./util"
+require_relative "./inc/util"
 require "optparse"
 
 options = {}
