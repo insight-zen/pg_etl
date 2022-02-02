@@ -11,6 +11,7 @@ module PgEtl
         "bigint" => :bigint,
         "jsonb" => :jsonb,
         "integer" => :integer,
+        "text" => :text
       }
 
     attr_accessor :message
@@ -65,7 +66,7 @@ module PgEtl
 
     # { name: rails_spec } - what you would typically see in the migration file
     def spec_hash
-      { name.to_sym => rails_spec.slice(:type, :limit, :column_default, :numeric_precision) }
+      { name.to_sym => rails_spec.slice(:type, :limit, :null, :column_default, :numeric_precision).compact }
     end
 
     def diff(c2)

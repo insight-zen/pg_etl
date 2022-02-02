@@ -28,6 +28,10 @@ module PgEtl
       @columns.detect { |c| c.name == name.to_s }
     end
 
+    def [](name)
+      column(name)
+    end
+
     def column_names
       @columns.map(&:name).sort
     end

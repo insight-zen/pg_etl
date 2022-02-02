@@ -36,6 +36,80 @@ module PgEtl
     end
 
     #
+    #  -- Mod Methods --
+    #
+
+    # Run a catalog query to get a list of tables, check that all the given tables exist and then delete them
+    # table can be a single table or an array
+    # no_exist:
+    #  skip: (default) skip that table and continue
+    #  abort: exit out of the function
+    #  quiet: No message is printed. Missing table is skipped.
+    def drop_table(table:, **opts)
+      tab_list = [table].flatten.compact
+      return if tab_list.length == 0
+      schema_tables = q_tables(names_only: true)
+      drops, skips = [], []
+      tab_list.each do |table|
+        exist = schema_tables.include?(table)
+        if exist
+          sql = "DROP TABLE #{table}"
+          execute(sql: sql)
+          drop.push(table)
+        else
+          case opts[:no_exist]
+          when :quiet
+            # Do nothing. No message is printed
+          when :abort
+            raise(" * Table #{table} does not exist. Aborting.")
+          else
+            puts(" * Table #{table} does not exist. Skipping.")
+          end
+        end
+        skips.push(table)
+      end
+      [
+        drops.length > 0 ? "#{drops.length} tables dropped. #{drops}" : "No tables dropped",
+        skips.length > 0 ? "#{skips.length} tables skipped. #{skips}" : nil,
+      ].compact.join(", ")
+    end
+
+    # ALTER TABLE Queries: https://www.postgresql.org/docs/14/sql-altertable.html
+    # Generic alter table statement. Provide table name and post
+    def alter_table(table_name:, post:)
+      sql = "ALTER TABLE #{table_name} #{post}"
+      execute(sql: sql)
+    end
+
+    # ALTER TABLE distributors ADD COLUMN address varchar(30);
+    def add_column(table_name:, column_name:, column_spec:, **opts)
+      sql = "ADD COLUMN #{column_name} #{column_spec}"
+      alter_table(table_name: table_name, post: sql)
+    end
+
+    def drop_column(table_name:, column_name:, **opts)
+      sql = "DROP COLUMN #{column_name}"
+      alter_table(table_name: table_name, post: sql)
+    end
+
+    def alter_column(table_name:, column_name:, column_spec:, **opts)
+      sql = "ALTER COLUMN #{column_name} #{column_spec}"
+      alter_table(table_name: table_name, post: sql)
+    end
+
+    # ALTER TABLE distributors RENAME COLUMN address TO city;
+    def rename_column(table_name:, column_name:, new_column_name:, **opts)
+      sql = "RENAME COLUMN #{column_name} TO #{new_column_name}"
+      alter_table(table_name: table_name, post: sql)
+    end
+
+    def delete_rows(table_name:, **opts)
+      where_str = opts[:where]
+      sql = "DELETE FROM #{table_name} #{where_str}"
+      execute(sql: sql)
+    end
+
+    #
     # - Schema Queries
     #
 
@@ -119,6 +193,17 @@ module PgEtl
         title,
         tabs_list.map { |row| [s_format % [row[:name], row[:num_columns], row[:rows]]] }
       ].flatten.join("\n")
+    end
+
+    def filtered_tables(cond:, **opts)
+      rv = q_tables(format: :hash)
+      if cond == :blank
+        rv.select{|a, b| b[:rows] == 0 }
+      elsif cond == :non_blank
+        rv.select{|a, b| b[:rows] > 0 }
+      else
+        rv
+      end
     end
 
     module ClassMethods
