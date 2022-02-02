@@ -1,0 +1,34 @@
+#! /usr/bin/env ruby
+
+require_relative "./util"
+require "optparse"
+
+options = {}
+OptionParser.new do |opt|
+  opt.on("-v", "--verbose", "Enable verbose mode.") { |v| options[:verbose] = v }
+  opt.on("-d", "--database DATABASE", "Specify a database name.") { |v| options[:db_name] = v }
+  opt.on("-t", "--table TABLE", "Specify a table name. Database must be specified.") { |v| options[:table] = v }
+  opt.on("-c", "--column COLUMN", "Specify a column name. Database must be specified.") { |v| options[:column] = v }
+  opt.on("-l", "--[no-]load", "When no-load is specified, will not load the file") do |v|
+    options[:skip_load] = !v
+  end
+end.parse!
+
+if (options[:table] || options[:column]) && !options[:db_name]
+  raise(" ** Missing Database Name **\nIf using table or column, you must also specify a database with --database DBNAME.\nUse with -h to see details on the available options.")
+end
+
+
+if options[:db_name]
+  c = PG[options[:db_name]]
+  if options[:table]
+    puts " * Table: #{options[:table]} in Database: #{c.name}\n#{c.q_tables(format: :print)}\n - To see more details of a TABLE specify with --table TABLE."
+  else
+    puts " * #{c.num_tables} tables in Database: #{c.name}\n#{c.q_tables(format: :print)}\n - To see more details of a TABLE specify with --table TABLE."
+  end
+else
+  db_array = PG.databases
+  puts " * #{db_array.length} databases:\n#{db_array.join(', ')}\n - To see more details for DATABASE run with --database DATABASE"
+end
+
+
