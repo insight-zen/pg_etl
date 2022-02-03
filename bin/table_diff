@@ -1,0 +1,44 @@
+#! /usr/bin/env ruby
+
+require_relative "./inc/util"
+require "optparse"
+
+def check_needed(opts:, parse:)
+  rv = []
+  rv.push(" * Specify two databases with --db1 FirstDB and --db2 Second DB.") unless opts[:db1] && opts[:db2]
+  rv.push(" * Specify a table name with --table TABLE") unless opts[:table]
+  return if (rv.flatten.compact.length == 0)
+  puts ["Please check the following - ", rv, parse.help].join("\n")
+end
+
+opts = parse_options(mandatory: [:db1, :db2, :table]) do |opt, res|
+  opt.on("-v", "--verbose", "Enable verbose mode.") { |v| res[:verbose] = v }
+  opt.on("-db1", "--db1 DATABASE1", "First database") { |v| res[:db1] = v }
+  opt.on("-db2", "--db2 DATABASE2", "Second database") { |v| res[:db2] = v }
+  opt.on("-t", "--table TABLE", "Table name.") { |v| res[:table] = v }
+end
+
+def table_schema_command(db:, table:, format: nil)
+  s_post = %Q!sed -e '/^Indexes/,$d; /^Table/d; /^Column/d' | sort!
+  s_command = %Q!psql -d %s --no-align -c "\\d %s" | #{s_post}! % [db, table]
+  return s_command if format == :text
+  # puts s_command
+  `#{s_command}`
+end
+
+def tdiff(opts)
+  s_tab1 = table_schema_command(db: opts[:db1], table: opts[:table], format: :text)
+  s_tab2 = table_schema_command(db: opts[:db1], table: opts[:table], format: :text)
+
+  s_command = %Q!diff -y <(#{s_tab1})  <(#{s_tab2})!
+  s_command = %Q!/usr/bin/diff -y <(ls -l)  <(ls -1)!
+  puts s_command
+  system(s_command)
+  #{s_command}`
+end
+
+# db1_table = table_schema_command(db: opts[:db1], table: opts[:table])
+# db2_table = table_schema_command(db: opts[:db2], table: opts[:table])
+
+# puts "One:\n#{db1_table}\nTwo:\n#{db2_table}"
+puts tdiff(opts)

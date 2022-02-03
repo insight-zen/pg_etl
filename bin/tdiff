@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# https://wiki.bash-hackers.org/howto/getopts_tutorial
+# List the differences in the table schema for the given table between the two databases
+# ./bin/tdiff -d tsg_test_101 -D insight_core_dev -t insight_core_users
+
+function usage {
+  echo "Compares a table from two different databases."
+  echo "Usage:"
+  echo "$0 options"
+
+  echo "    -d DATABASE1  Database 1"
+  echo "    -D DATABASE2  Database 2"
+  echo "    -t TABLE     Table"
+  echo "    -h           prints usage information"
+}
+
+# list of arguments expected in the input. Preceeding the optstring with a colon disables verbose error handling
+opt_string=":ad:D:e:t:"
+
+while getopts $opt_string opt; do
+  case $opt in
+    a)
+      echo "-a was triggered!" >&2
+      ;;
+    d)
+      # echo "-t was triggered, Parameter: $OPTARG" >&2
+      db1=$OPTARG
+      ;;
+    D)
+      # echo "-t was triggered, Parameter: $OPTARG" >&2
+      db2=$OPTARG
+      ;;
+    t)
+      # echo "-t was triggered, Parameter: $OPTARG" >&2
+      table=$OPTARG
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+if [ -z ${db1+x} ] || [ -z ${db2+x} ] || [ -z ${table+x} ];
+then
+  echo "Two databases and a table is required"
+  usage
+  exit 1
+fi
+
+comm1="./bin/query --database $db1 --table $table"
+# echo "comm1 is $comm1"
+
+comm2="./bin/query --database $db2 --table $table"
+# echo "comm1 is $comm2"
+
+comm="diff -y <($comm1) <($comm2)"
+echo "Diff for $table between $db1 and $db2"
+eval $comm
+
+# diff -y <(./bin/query --database tsg_2022 --table insight_core_users) <(./bin/query --table insight_core_users --database tsg_456)
+
+# diff -y <(./bin/query --database tsg_2022 --table insight_core_users) <(./bin/query --table insight_core_users --database tsg_456)
+# diff -y <(ls -l)  <(ls -1)
